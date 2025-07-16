@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>HeimZeiger - Zufällige Namensauswahl</title>
+    <title>HeimZeiger</title>
     <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
@@ -199,41 +199,24 @@
             <div class="confetti" v-for="n in 20" :key="n"></div>
         </div>
         
-        <!-- Header -->
-        <header class="text-center py-8">
-            <h1 class="text-4xl font-bold bg-gradient-to-r from-pink-600 to-green-600 bg-clip-text text-transparent mb-2 kitsch-title">🎯✨ HeimZeiger ✨🎯</h1>
-            <p class="text-pink-700 font-semibold text-lg">💖 Zufällige Namensauswahl mit dem Zeiger 💚</p>
-        </header>
+
+
+   
 
         <!-- Main Content -->
         <main class="container mx-auto px-4">
-            <div class="flex flex-col lg:flex-row items-start justify-center gap-8 max-w-7xl mx-auto">
+            <div class="flex flex-col lg:flex-row items-center justify-center gap-12 max-w-6xl mx-auto">
                 
-                <!-- Names List Column -->
-                <div class="w-full lg:w-1/3 order-2 lg:order-1">
-                    <div class="bg-white rounded-lg shadow-xl overflow-hidden border-4 border-pink-400">
-                        <div class="bg-gradient-to-r from-pink-500 to-green-500 text-white p-4 text-center">
-                            <h3 class="text-xl font-bold">💖 Namensliste 💚</h3>
-                            <div class="text-sm opacity-90">✨ {{ names.length }} Namen ✨</div>
-                        </div>
-                        
-                        <!-- Scrollable Name List -->
-                        <div class="h-80 overflow-hidden relative bg-gradient-to-b from-pink-50 to-green-50">
-                            <!-- Target indicator where pointer points -->
-                            <div class="absolute top-4 left-0 right-0 h-16 bg-gradient-to-r from-pink-300 to-green-300 bg-opacity-20 border-y-2 border-pink-400 z-0 pointer-events-none"></div>
-                            
-                            <div class="name-list" 
-                                 :class="{ 'scrolling': isRunning }"
-                                 :style="{ transform: `translateY(${listOffset}px)` }">
-                                <div v-for="(name, index) in displayNames" 
-                                     :key="`${name}-${index}`"
-                                     class="name-item p-4 border-b border-pink-200 text-center font-semibold text-pink-800 hover:bg-green-100"
-                                     :class="{ 
-                                         'highlighted': index === highlightedIndex && isRunning,
-                                         'selected-name': index === highlightedIndex && isFinished 
-                                     }">
-                                    {{ name }}
-                                </div>
+                <!-- Random Name Box -->
+                <div class="w-full lg:w-1/3 order-2 lg:order-1 flex justify-center">
+                    <div class="bg-gradient-to-r from-pink-200 to-green-200 border-4 border-pink-500 rounded-xl p-8 shadow-2xl min-w-[300px]">
+                        <div class="bg-white rounded-lg p-6 border-2 border-pink-400 shadow-inner">
+                            <div class="text-3xl font-extrabold text-center text-pink-800 min-h-[60px] flex items-center justify-center"
+                                 :class="{
+                                     'animate-pulse': isRunning,
+                                     'selected-name': isFinished
+                                 }">
+                                {{ currentDisplayName || '???' }}
                             </div>
                         </div>
                     </div>
@@ -291,10 +274,7 @@
 
         </main>
 
-        <!-- Footer -->
-        <footer class="text-center py-8 mt-12 text-pink-600">
-            <p class="font-semibold">💖 Entwickelt mit Vue.js & Tailwind CSS 💚</p>
-        </footer>
+
     </div>
 
     <script>
@@ -312,150 +292,26 @@
                         'Sarah', 'Sebastian'
                     ],
                     selectedName: '',
+                    currentDisplayName: '',
                     isRunning: false,
                     isFinished: false,
-                    animationInterval: null,
-                    listOffset: 0,
-                    highlightedIndex: 0,
-                    itemHeight: 65 // height of each name item in pixels
-                }
-            },
-            computed: {
-                displayNames() {
-                    // Repeat names multiple times for smooth scrolling effect
-                    const repeats = 8;
-                    const repeated = [];
-                    for (let i = 0; i < repeats; i++) {
-                        repeated.push(...this.names);
-                    }
-                    return repeated;
-                },
-                targetIndex() {
-                    // Index of the item that should be in the target zone (1st visible item since target is now top-4)
-                    return Math.floor(this.displayNames.length / 2) + 1;
+                    animationInterval: null
                 }
             },
             methods: {
-                
-                reset() {
-                    this.selectedName = '';
-                    this.isRunning = false;
-                    this.isFinished = false;
-                    this.listOffset = 0;
-                    this.highlightedIndex = 0;
-                    if (this.animationInterval) {
-                        cancelAnimationFrame(this.animationInterval);
-                        this.animationInterval = null;
-                    }
-                },
-                
-                getVisualTargetIndex() {
-                    // Alternative Methode: Finde das Element, das visuell im Zielbereich steht
-                    // Zielbereich: 16px bis 80px, Mitte bei 48px
-                    
-                    for (let i = 0; i < this.displayNames.length; i++) {
-                        const elementTop = i * this.itemHeight + this.listOffset;
-                        const elementBottom = elementTop + this.itemHeight;
-                        
-                        // Prüfe, ob das Element den Zielbereich (48px ± 32px) überlappt
-                        if (elementTop <= 48 && elementBottom >= 48) {
-                            console.log(`Visuell im Zielbereich: Index ${i}, Name ${this.displayNames[i]}, Top: ${elementTop}, Bottom: ${elementBottom}`);
-                            return i;
-                        }
-                    }
-                    
-                    // Fallback zur mathematischen Berechnung
-                    return this.getTargetZoneIndex();
-                },
-                
-                getTargetZoneIndex() {
-                    // Einfache und direkte Berechnung:
-                    // Zielbereich ist bei 48px (Mitte zwischen 16px und 80px)
-                    // Bei listOffset wird die Liste verschoben
-                    // Element an Index i steht bei: i * itemHeight + listOffset
-                    // Wir suchen i, sodass: i * itemHeight + listOffset ≈ 48
-                    // Also: i ≈ (48 - listOffset) / itemHeight
-                    
-                    const targetIndex = Math.round((48 - this.listOffset) / this.itemHeight);
-                    const clampedIndex = Math.max(0, Math.min(targetIndex, this.displayNames.length - 1));
-                    
-                    console.log(`Zielbereich Berechnung: listOffset=${this.listOffset}, targetIndex=${targetIndex}, clampedIndex=${clampedIndex}, Name=${this.displayNames[clampedIndex]}`);
-                    
-                    return clampedIndex;
-                },
-                
-                finishAnimation(currentOffset) {
-                    console.log(`Finishing animation: currentOffset=${currentOffset}, listOffset=${this.listOffset}`);
-                    
-                    // Verwende die gleiche visuelle Methode wie in der Animation
-                    const finalIndex = this.getVisualTargetIndex();
-                    
-                    console.log(`Vor Nachjustierung: finalIndex=${finalIndex}, Name=${this.displayNames[finalIndex]}`);
-                    
-                    // Positioniere das Element exakt in der Mitte des Zielbereichs (48px)
-                    // Element an Index i soll bei 48px stehen: i * itemHeight + listOffset = 48
-                    // Also: listOffset = 48 - i * itemHeight
-                    const newListOffset = 48 - finalIndex * this.itemHeight;
-                    this.listOffset = newListOffset;
-                    this.highlightedIndex = finalIndex;
-                    
-                    console.log(`Nach Nachjustierung: newListOffset=${newListOffset}, finalIndex=${finalIndex}`);
-                    
-                    // Setze den Namen aus dem Zielbereich
-                    this.selectedName = this.displayNames[finalIndex];
-                    
-                    console.log(`Finaler Gewinner: ${this.selectedName}`);
-                    
-                    // Animation beenden
-                    this.isRunning = false;
-                    this.isFinished = true;
-                    this.playWinnerSound();
-                },
-                
-                playWinnerSound() {
-                    // Spiele einen einfachen Ton ab (Browser-kompatibel)
-                    try {
-                        // Erstelle eine einfache Audiofrequenz
-                        const audioContext = new (window.AudioContext || window.webkitAudioContext)();
-                        const oscillator = audioContext.createOscillator();
-                        const gainNode = audioContext.createGain();
-                        
-                        oscillator.connect(gainNode);
-                        gainNode.connect(audioContext.destination);
-                        
-                        oscillator.frequency.value = 800; // Hohe, fröhliche Frequenz
-                        oscillator.type = 'sine';
-                        
-                        gainNode.gain.setValueAtTime(0.3, audioContext.currentTime);
-                        gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.5);
-                        
-                        oscillator.start(audioContext.currentTime);
-                        oscillator.stop(audioContext.currentTime + 0.5);
-                    } catch (e) {
-                        // Fallback falls Audio nicht funktioniert
-                        console.log('🎉 GEWINNER! 🎉');
-                    }
-                },
-                
                 startSelection() {
-                    // Reset first to ensure clean state
+                    // Reset state
                     this.reset();
                     
-                    // Then start the new selection process
+                    // Start animation
                     this.isRunning = true;
                     this.isFinished = false;
                     this.selectedName = '';
+                    this.currentDisplayName = '';
                     
-                    // Reset list position to start
-                    this.listOffset = 0;
-                    this.highlightedIndex = 0;
-                    
-                    // Animation parameters - max 5 seconds
-                    let currentOffset = 0;
-                    let speed = 15; // Initial speed (pixels per frame)
-                    const minDistance = this.names.length * this.itemHeight * 2; // Minimum scroll distance
-                    const maxDistance = this.names.length * this.itemHeight * 4; // Maximum scroll distance
-                    const randomDistance = minDistance + Math.random() * (maxDistance - minDistance);
+                    // Animation parameters
+                    let currentNameIndex = 0;
+                    let speed = 80; // Initial speed in milliseconds
                     const maxDuration = 5000; // 5 seconds max
                     const startTime = performance.now();
                     
@@ -464,44 +320,77 @@
                         
                         const elapsed = performance.now() - startTime;
                         
-                        // Force stop after max duration
+                        // Show current name
+                        this.currentDisplayName = this.names[currentNameIndex];
+                        currentNameIndex = (currentNameIndex + 1) % this.names.length;
+                        
+                        // Gradually slow down
+                        if (elapsed > maxDuration * 0.6) {
+                            speed = Math.min(speed * 1.1, 500); // Slow down
+                        }
+                        
+                        // Check if we should stop
                         if (elapsed >= maxDuration) {
-                            this.finishAnimation(currentOffset);
-                            return;
-                        }
-                        
-                        // Update position
-                        currentOffset += speed;
-                        this.listOffset = -currentOffset;
-                        
-                        // Update highlighted index: Welches Element steht gerade im Zielbereich?
-                        this.highlightedIndex = this.getVisualTargetIndex();
-                        
-                        // Deceleration logic
-                        const remaining = randomDistance - currentOffset;
-                        const timeRemaining = maxDuration - elapsed;
-                        if (remaining < 800 || timeRemaining < 1500) {
-                            speed = Math.max(speed * 0.90, 2); // Faster deceleration, higher minimum speed
-                        }
-                        
-                        // Check if we should stop (distance-based)
-                        if (currentOffset >= randomDistance) {
-                            this.finishAnimation(currentOffset);
+                            this.finishAnimation();
                             return;
                         }
                         
                         // Continue animation
-                        this.animationInterval = requestAnimationFrame(animate);
+                        this.animationInterval = setTimeout(animate, speed);
                     };
                     
                     // Start animation
-                    this.animationInterval = requestAnimationFrame(animate);
+                    animate();
+                },
+                
+                finishAnimation() {
+                    // The winner is whoever is currently displayed
+                    this.selectedName = this.currentDisplayName;
+                    
+                    // Animation beenden
+                    this.isRunning = false;
+                    this.isFinished = true;
+                    this.playWinnerSound();
+                },
+                
+                reset() {
+                    this.selectedName = '';
+                    this.currentDisplayName = '';
+                    this.isRunning = false;
+                    this.isFinished = false;
+                    if (this.animationInterval) {
+                        clearTimeout(this.animationInterval);
+                        this.animationInterval = null;
+                    }
+                },
+                
+                playWinnerSound() {
+                    // Play a simple celebratory tone
+                    try {
+                        const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+                        const oscillator = audioContext.createOscillator();
+                        const gainNode = audioContext.createGain();
+                        
+                        oscillator.connect(gainNode);
+                        gainNode.connect(audioContext.destination);
+                        
+                        oscillator.frequency.value = 800; // High, happy frequency
+                        oscillator.type = 'sine';
+                        
+                        gainNode.gain.setValueAtTime(0.3, audioContext.currentTime);
+                        gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.5);
+                        
+                        oscillator.start(audioContext.currentTime);
+                        oscillator.stop(audioContext.currentTime + 0.5);
+                    } catch (e) {
+                        console.log('🎉 GEWINNER! 🎉');
+                    }
                 }
             },
             
             beforeUnmount() {
                 if (this.animationInterval) {
-                    cancelAnimationFrame(this.animationInterval);
+                    clearTimeout(this.animationInterval);
                 }
             }
         }).mount('#app');
